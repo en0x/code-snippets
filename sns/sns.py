@@ -3,26 +3,21 @@
 
 import argparse
 import sys
-import boto
-import boto.sns
-
+import boto3
+from botocore.exceptions import ClientError
 
 def get_subscription(token=None):
-    subscriptions = CONN.get_all_subscriptions_by_topic(ARGS_ARN_TOPIC)
-    next_token = subscriptions['ListSubscriptionsByTopicResponse'][
-        'ListSubscriptionsByTopicResult']['NextToken']
-    subscription_list = subscriptions['ListSubscriptionsByTopicResponse'][
-        'ListSubscriptionsByTopicResult']['Subscriptions']
+  #  subscriptions = sns.list_subscriptions_by_topic(TopicArn=ARGS_ARN_TOPIC)
+    paginator = sns.get_paginator('list_subscriptions_by_topic')
+    page_iterator = paginator.paginate(TopicArn=ARGS_ARN_TOPIC)
 
-    for sub in subscription_list:
-        if ARGS_EMAIL in sub['Endpoint']:
-            return 'email ALREADY subscribed! email: {} ; status: {}'.format(sub["Endpoint"], sub['SubscriptionArn'])
+    for page in page_iterator:
+        for key in page[ "Subscriptions" ]:
+            if ARGS_EMAIL in key['Endpoint']:
+                return 'email ALREADY subscribed! email: {} ; status: {}'.format(key["Endpoint"], key['SubscriptionArn'])
     else:
-        if next_token:
-            get_subscription(next_token)
-        else:
-            CONN.subscribe(ARGS_ARN_TOPIC, "email", ARGS_EMAIL)
-            return 'email NOT subscribed! SUBSCRIBING! email: {}; status: {}'.format(sub["Endpoint"], sub['SubscriptionArn'])
+        sns.subscribe(TopicArn=ARGS_ARN_TOPIC, Protocol="email", Endpoint=ARGS_EMAIL)
+        return 'email NOT subscribed! SUBSCRIBING! email: {}; status: {}'.format(key["Endpoint"], key['SubscriptionArn'])
 
 
 if __name__ == '__main__':
@@ -45,17 +40,28 @@ if __name__ == '__main__':
     if ARGS.region:
         ARGS_REGION = ARGS.region
 
-    # Let's make a connection to sns here
-    CONN = boto.sns.connect_to_region(ARGS_REGION)
+    sns = boto3.client('sns', region_name=ARGS_REGION)
 
-    # Get account ids
-    ARN_TOPIC_ACCOUNT_ID = ARGS_ARN_TOPIC.split(':')[4]
-    ACCOUNT_ID = boto.connect_iam().get_user().arn.split(':')[4]
+    try:
+        # Get account ids
+        ARN_TOPIC_ACCOUNT_ID = ARGS_ARN_TOPIC.split(':')[4]
+        ACCOUNT_ID = boto3.client('sts').get_caller_identity().get('Account')
+        # If accounts don't match. Print error message and exit, otherwise subscribe to the topic
+        if ACCOUNT_ID != ARN_TOPIC_ACCOUNT_ID:
+            print "ERROR: Your credential account id: " + ACCOUNT_ID + " is different than arn topic account id: " + ARN_TOPIC_ACCOUNT_ID
+            sys.exit(1)
+        else:
+            SUBSCRIPTION = get_subscription()
+            print SUBSCRIPTION
 
-    # If accounts don't match. Print error message and exit, otherwise subscribe to the topic
-    if ACCOUNT_ID != ARN_TOPIC_ACCOUNT_ID:
-        print "ERROR: Your account id: " + ACCOUNT_ID + " is different than arn topic account id: " + ARN_TOPIC_ACCOUNT_ID
-        sys.exit(1)
-    else:
-        SUBSCRIPTION = get_subscription()
-        print SUBSCRIPTION
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ExpiredToken':
+            print "ERROR: Security token expired"
+        if e.response['Error']['Code'] == 'InvalidClientTokenId':
+            print "ERROR: Security token in invalid"
+        else:
+            print "Unexpected error: %s" % e
+
+
+
+
