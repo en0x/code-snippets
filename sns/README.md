@@ -28,14 +28,21 @@ optional arguments:
 #### SAMPLE RUN OF EMAIL NOT YET ADDED TO THE TOPIC
 
 ```
-❯ ./sns.py --email some_email@email.com --arn_topic arn:aws:sns:us-east-1:1234:topic
-email NOT subscribed! SUBSCRIBING! email: some_email@email.com; status: PendingConfirmation
+❯ ./sns.py --region us-east-2 --email some_email@email.com --arn_topic arn:aws:sns:us-east-2:<ACCOUNT>:<TOPIC_ARN>
+email NOT subscribed! SUBSCRIBING! email: some_email@email.com; status: arn:aws:sns:us-east-2:<ACCOUNT>:<TOPIC_ARN>
+
 
 ```
-#### SAMPLE RUN OF ALEADY ADDED EMAIL TO THE TOPIC
+#### SAMPLE RUN OF ALEADY ADDED EMAIL TO THE TOPIC BUT PENDING CONFIRMATION
 
 ```
-❯ ./sns.py --email some_email@email.com --arn_topic arn:aws:sns:us-east-1:1234:topic
+❯ ./sns.py --region us-east-2 --email some_email@email.com --arn_topic arn:aws:sns:us-east-2:<ACCOUNT>:<TOPIC_ARN>
 email ALREADY subscribed! email: some_email@email.com ; status: PendingConfirmation
 ```
 
+#### SAMPLE RUN OF ALEADY ADDED EMAIL TO THE TOPIC AND SUBSCRIBED
+
+```
+❯ ./sns.py --region us-east-2 --email some_email@email.com --arn_topic arn:aws:sns:us-east-2:<ACCOUNT>:<TOPIC_ARN>
+email ALREADY subscribed! email: some_email@email.com ; status: arn:aws:sns:us-east-2:<ACCOUNT>:<TOPIC_ARN>:3c07a869-7486-4474-9785-8c08acefbcb9
+```
