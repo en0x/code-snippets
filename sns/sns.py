@@ -14,10 +14,10 @@ def get_subscription(token=None):
     for page in page_iterator:
         for key in page[ "Subscriptions" ]:
             if ARGS_EMAIL in key['Endpoint']:
-                return 'email ALREADY subscribed! email: {} ; status: {}'.format(key["Endpoint"], key['SubscriptionArn'])
+                return 'Info: Email ALREADY subscribed! email: {} ; status: {}'.format(key["Endpoint"], key['SubscriptionArn'])
     else:
         sns.subscribe(TopicArn=ARGS_ARN_TOPIC, Protocol="email", Endpoint=ARGS_EMAIL)
-        return 'email NOT subscribed! SUBSCRIBING! email: {}; status: {}'.format(key["Endpoint"], key['SubscriptionArn'])
+        return 'Info: Email NOT subscribed! SUBSCRIBING! email: {}; status: {}'.format(ARGS_EMAIL, ARGS_ARN_TOPIC)
 
 
 if __name__ == '__main__':
